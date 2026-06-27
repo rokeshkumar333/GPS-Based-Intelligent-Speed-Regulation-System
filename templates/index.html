@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Bike Speed Control System</title>
+    <!-- Leaflet & Routing CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #fff; }
+        .header { text-align: center; font-weight: bold; font-size: 20px; padding: 15px 0; background: #fff; border-bottom: 1px solid #ccc; z-index: 1000; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        
+        /* Map Area */
+        .map-section { flex: 1; position: relative; }
+        #map { width: 100%; height: 100%; }
+        .map-controls { position: absolute; top: 10px; left: 50px; z-index: 1000; display: flex; gap: 5px; background: rgba(255,255,255,0.9); padding: 5px; border-radius: 4px; box-shadow: 0 1px 5px rgba(0,0,0,0.4); }
+        .map-controls input { padding: 4px; border: 1px solid #aaa; border-radius: 3px; font-size: 14px;}
+        .map-controls button { padding: 4px 8px; cursor: pointer; border: 1px solid #aaa; background: #f0f0f0; border-radius: 3px; font-size: 14px;}
+        
+        /* Hide the native directions box */
+        .leaflet-routing-container { display: none !important; }
+
+        /* Sidebar */
+        .sidebar { width: 380px; padding: 20px; background: #fff; box-sizing: border-box; overflow-y: auto; border-left: 1px solid #ccc; }
+        h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; color: #111; }
+        .controls-group { margin-bottom: 25px; }
+        .btn-group button { padding: 6px 14px; margin-right: 5px; border: 1px solid #aaa; background: #f0f0f0; cursor: pointer; border-radius: 3px; font-size: 14px;}
+        .btn-group button:hover { background: #e0e0e0; }
+        
+        /* Throttle & Status Info */
+        input[type=range] { width: 100%; margin-top: 5px; cursor: pointer; }
+        .info-box { background: #f3f4f6; padding: 12px; margin-bottom: 10px; border-radius: 3px; border: 1px solid #e5e7eb; font-size: 15px; color: #111;}
+        
+        /* Logs */
+        .logs-container { background: #0a0a0a; color: #4ade80; font-family: monospace; font-size: 13px; height: 350px; padding: 10px; overflow-y: auto; border-radius: 3px; white-space: pre-wrap;}
+        .log-entry { margin-bottom: 3px; }
+    </style>
+</head>
+<body>
+    <div class="header">GPS Bike Speed Control System (ML Integrated)</div>
+    <div class="main-container">
+        
+        <div class="map-section">
+            <div class="map-controls">
+                <input type="text" id="startLoc" placeholder="Start Point (e.g. porur)" value="porur">
+                <input type="text" id="endLoc" placeholder="Destination (e.g. villivakkam)" value="villivakkam">
+                <button onclick="setRoute()">Set Route</button>
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="controls-group">
+                <h3>Controls</h3>
+                <div class="btn-group">
+                    <button onclick="sendStart(true)">Start</button>
+                    <button onclick="sendStart(false)">Stop</button>
+                    <button onclick="toggleHelmet()">Helmet</button>
+                </div>
+            </div>
+
+            <div class="controls-group">
+                <h3>Throttle</h3>
+                <input type="range" id="throttle" min="0" max="100" value="0" onchange="updateThrottle()">
+            </div>
+
+            <div class="info-box" id="dispThrottle">Throttle: 0%</div>
+            <div class="info-box" id="dispSpeed">Speed: 0 km/h</div>
+            <div class="info-box" id="dispLimit">Dynamic Limit: 50 km/h</div>
+            <div class="info-box" id="dispAlert">Alert: Stopped</div>
+
+            <div class="controls-group" style="margin-top: 30px;">
+                <h3>Logs</h3>
+                <div class="logs-container" id="logsContainer">
+                    <!-- logs go here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet & Routing JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script>
+        // Map initialization
+        const map = L.map('map').setView([13.0827, 80.2707], 12); // Default to Chennai
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let routingControl = null;
+
+        async function setRoute() {
+            const startStr = document.getElementById('startLoc').value;
+            const endStr = document.getElementById('endLoc').value;
+            if(!startStr || !endStr) {
+                alert("Please enter both start and destination");
+                return;
+            }
+
+            try {
+                // simple geocoding using nominatim
+                const resStart = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(startStr)}`);
+                const dataStart = await resStart.json();
+
+                const resEnd = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endStr)}`);
+                const dataEnd = await resEnd.json();
+
+                if(!dataStart.length || !dataEnd.length) {
+                    alert("Could not find one or both locations.");
+                    return;
+                }
+
+                const startLatLng = L.latLng(dataStart[0].lat, dataStart[0].lon);
+                const endLatLng = L.latLng(dataEnd[0].lat, dataEnd[0].lon);
+
+                if(routingControl) {
+                    map.removeControl(routingControl);
+                }
+
+                routingControl = L.Routing.control({
+                    waypoints: [startLatLng, endLatLng],
+                    routeWhileDragging: false,
+                    showAlternatives: false,
+                    addWaypoints: false,
+                    fitSelectedRoutes: true
+                }).on('routesfound', function(e) {
+                    routeCoordinates = e.routes[0].coordinates;
+                    currentRouteIndex = 0;
+                    if(mapMarker) {
+                        map.removeLayer(mapMarker);
+                    }
+                    // Create an icon or just default marker
+                    mapMarker = L.marker(routeCoordinates[0]).addTo(map);
+                }).addTo(map);
+
+            } catch(e) {
+                console.error("Routing error", e);
+                alert("Error setting route.");
+            }
+        }
+
+        // Logic & Status Variables
+        let helmetVerified = false; // By default off
+        let throttleValue = 0;
+        let routeCoordinates = [];
+        let currentRouteIndex = 0;
+        let mapMarker = null;
+        let baseSpeed = 0;
+        let dynamicLimit = 50;
+        
+        async function sendControl(payload) {
+            await fetch('/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        async function sendStart(val) {
+            if (val && !helmetVerified) {
+                alert('Please wear your helmet to start the ride.');
+                return;
+            }
+            await sendControl({ start: val });
+            addLog(`System ${val ? "Started" : "Stopped"}`);
+        }
+
+        async function toggleHelmet() {
+            helmetVerified = !helmetVerified;
+            await sendControl({ helmet: helmetVerified ? 1 : 0 });
+            alert(helmetVerified ? "Helmet worn. You can now start the ride." : "Helmet removed.");
+            addLog(`Helmet is now ${helmetVerified ? "ON" : "OFF"}`);
+        }
+
+        function updateThrottle() {
+            throttleValue = parseInt(document.getElementById('throttle').value, 10);
+            document.getElementById('dispThrottle').innerText = `Throttle: ${throttleValue}%`;
+            
+            baseSpeed = Math.round((throttleValue / 100) * 80); 
+            let speedTarget = Math.min(baseSpeed, dynamicLimit);
+            sendControl({ speed: speedTarget, limit: dynamicLimit });
+        }
+
+        function applyDynamicLimit(newLimit) {
+            if (dynamicLimit !== newLimit) {
+                dynamicLimit = newLimit;
+                // Auto adjust speed if it's over the new limit
+                let speedTarget = Math.min(baseSpeed, dynamicLimit);
+                sendControl({ speed: speedTarget, limit: dynamicLimit });
+            }
+        }
+
+        function addLog(message) {
+            const container = document.getElementById('logsContainer');
+            const d = new Date();
+            const timeStr = d.toTimeString().split(' ')[0]; // HH:MM:SS
+            const el = document.createElement('div');
+            el.className = 'log-entry';
+            el.innerText = `Time: ${timeStr} | ${message}`;
+            container.appendChild(el);
+            // auto scroll
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function refreshStatus() {
+            try {
+                const response = await fetch('/data');
+                const data = await response.json();
+                
+                // Keep backend in sync if UI state restarted (syncing helmet)
+                // However, we rely on our push using toggleHelmet.
+                
+                // --- ML Simulated Zone & Marker Logic ---
+                if (routeCoordinates.length > 0) {
+                    const progress = currentRouteIndex / routeCoordinates.length;
+                    let simulatedLimit = 50;
+                    if (progress < 0.2) simulatedLimit = 40;        // Zone 1
+                    else if (progress < 0.4) simulatedLimit = 30;   // Zone 2 (School/Market)
+                    else if (progress < 0.6) simulatedLimit = 50;   // Zone 3 
+                    else if (progress < 0.8) simulatedLimit = 60;   // Zone 4 (Highway)
+                    else simulatedLimit = 40;                       // Zone 5
+                    
+                    applyDynamicLimit(simulatedLimit);
+                } else {
+                    applyDynamicLimit(50);
+                }
+
+                const speed = Math.round(data.speed);
+                const limit = data.limit || 50; 
+                
+                const isRunning = data.status === "Running" || data.status === "Speed Controlled";
+                if (isRunning && speed > 0 && routeCoordinates.length > 0) {
+                    let step = Math.max(1, Math.round(speed / 10)); // Speed influences how fast it moves
+                    currentRouteIndex += step;
+                    
+                    if (currentRouteIndex >= routeCoordinates.length) {
+                        currentRouteIndex = routeCoordinates.length - 1;
+                    }
+                    if (mapMarker) {
+                        mapMarker.setLatLng(routeCoordinates[currentRouteIndex]);
+                        map.panTo(routeCoordinates[currentRouteIndex]); // Keep map centered on marker
+                    }
+                }
+                // ------------------------------
+                
+                document.getElementById('dispSpeed').innerText = `Speed: ${speed} km/h`;
+                document.getElementById('dispLimit').innerText = `Dynamic Limit: ${limit} km/h`;
+                document.getElementById('dispAlert').innerText = `Alert: ${data.status}`;
+                
+                // Add to log loop only if running
+                if (isRunning) {
+                    addLog(`Speed: ${speed} | Limit: ${limit} | ML: ${limit}`);
+                }
+            } catch (error) {
+                console.error('Status refresh error', error);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            // Reset backend state on refresh so it doesn't auto-start from last session
+            sendControl({ start: false, speed: 0, helmet: 0, limit: 50 });
+            
+            setInterval(refreshStatus, 1000);
+        });
+    </script>
+</body>
+</html>
