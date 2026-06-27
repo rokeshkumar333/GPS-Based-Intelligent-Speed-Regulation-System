@@ -14,12 +14,6 @@ This project demonstrates how Computer Vision, Embedded Systems, and Web Technol
 
 ---
 
-## Prototype
-
-![Prototype](images/prototype.jpg)
-
----
-
 ## System Architecture
 
 ![Architecture](images/architecture.png)
