@@ -1,80 +1,270 @@
-# AI-Based Smart Bike Safety and Speed Control System
+# 🚀 AI-Based Smart Bike Safety and Speed Control System
 
-This project integrates machine learning, IoT, and embedded system logic to create a smart bike safety system that:
-- Verifies helmet usage with a CNN model
-- Controls speed dynamically based on safety limits
-- Tracks distance in real time
-- Provides a web dashboard for start/stop, throttle, and status monitoring
+An Artificial Intelligence (AI) and Internet of Things (IoT) based intelligent transportation system designed to improve rider safety by integrating **Helmet Detection**, **Dynamic Speed Regulation**, **ESP32**, **Arduino Nano**, **Flask**, and **Machine Learning**.
 
-## Project Modules
+This project demonstrates how Computer Vision, Embedded Systems, and Web Technologies can work together to create a smart and safer riding experience.
 
-### Module 1: Helmet Detection
-- Dataset path: `helmet-detection/dataset`
-- Use `train_helmet_model.py` to train the CNN model
-- Trained weights are saved to `helmet_detector.pt`
+---
 
-### Module 2: Dashboard
-- Dashboard served by Flask from `index.html`
-- Uses webcam video to capture live images for helmet verification
-- Displays current speed, distance, helmet status, and ride status
+# 📷 Project Demonstration
 
-### Module 3: Backend
-- Flask app in `app.py`
-- Routes:
-  - `GET /` → Dashboard page
-  - `GET /data` → Real-time speed/distance/status
-  - `POST /control` → Update speed, helmet state, start/stop
-  - `POST /verify-helmet` → Verify helmet from camera image
-  - `POST /update` → Receive ESP32 feedback
+## Dashboard
 
-### Module 4: IoT Communication
-- ESP32 can call `/data` to get current bike state
-- Use `/control` to send speed and start/stop commands
-- Use `/update` to send actual speed/distance feedback back to Flask
+![Dashboard](images/dashboard.png)
 
-### Module 5: Motor Control Logic
-- If helmet is OFF → the system stops motor by setting speed to 0
-- If speed reaches or exceeds 6 km/h → backend auto-reduces it to 4 km/h
-- Distance is calculated continuously when the ride is running
+---
 
-## Setup
+## Prototype
 
-1. Create a Python environment (recommended):
-   ```bash
-   python -m venv venv
-   .\venv\Scripts\activate
-   ```
+![Prototype](images/prototype.jpg)
 
-2. Install dependencies:
-   ```bash
-   pip install flask pillow torch torchvision
-   ```
+---
 
-3. Train the helmet model:
-   ```bash
-   python train_helmet_model.py
-   ```
+## System Architecture
 
-4. Run the Flask app:
-   ```bash
-   python app.py
-   ```
+![Architecture](images/architecture.png)
 
-5. Open the dashboard in a browser:
-   ```
-   http://127.0.0.1:5000
-   ```
+---
 
-## Notes
+## 🎯 Project Objectives
 
-- If PyTorch is not installed or `helmet_detector.pt` is missing, helmet verification will fall back to manual control in the backend.
-- The dashboard requires camera permission for helmet verification.
-- The backend currently uses a simple safety rule to reduce speeds at 6 km/h and stop when helmet state is invalid.
+- Improve rider safety using AI.
+- Prevent bike operation without helmet verification.
+- Dynamically regulate vehicle speed.
+- Monitor vehicle speed and travel distance.
+- Integrate Machine Learning with IoT.
+- Demonstrate intelligent transportation concepts.
 
-## File Summary
+---
 
-- `app.py` — Flask server and IoT API endpoints
-- `index.html` — Web dashboard UI
-- `train_helmet_model.py` — Helmet detection training script
-- `helmet-detection/dataset` — Helmet image dataset
-- `README.md` — Project summary and setup instructions
+# ✨ Features
+
+✅ Helmet Detection using Deep Learning
+
+✅ Flask Web Dashboard
+
+✅ ESP32 and Arduino Nano Communication
+
+✅ Dynamic Speed Control
+
+✅ Real-time Speed Monitoring
+
+✅ Distance Calculation
+
+✅ Machine Learning Integration
+
+✅ REST API Communication
+
+✅ Safety Rule Engine
+
+---
+
+# 🛠 Technologies Used
+
+## Programming Languages
+
+- Python
+- HTML
+- CSS
+- JavaScript
+- C++ (Arduino)
+
+---
+
+## Frameworks & Libraries
+
+- Flask
+- OpenCV
+- PyTorch
+- TorchVision
+- NumPy
+- Pillow
+
+---
+
+## Hardware
+
+- ESP32
+- Arduino Nano
+- DC Motor
+- Motor Driver
+- Camera Module
+
+---
+
+## Development Tools
+
+- VS Code
+- Arduino IDE
+- Git
+- GitHub
+
+---
+
+# 📂 Project Structure
+
+```
+GPS-Based-Intelligent-Speed-Regulation-System
+
+│
+├── arduino_nano/
+│
+├── esp32/
+│
+├── helmet-detection/
+│
+├── logs/
+│      log.csv
+│
+├── ml_models/
+│      anomaly_model.py
+│      traffic_model.py
+│      rash_model.py
+│      train_helmet_model.py
+│
+├── models/
+│      helmet_detector.pt
+│
+├── templates/
+│      index.html
+│
+├── app.py
+├── README.md
+├── requirements.txt
+└── .gitignore
+```
+
+---
+
+# ⚙️ System Workflow
+
+1. Rider starts the dashboard.
+2. Camera verifies helmet usage.
+3. Flask backend processes the helmet status.
+4. ESP32 communicates with Arduino Nano.
+5. Speed commands are sent to the motor.
+6. Real-time dashboard displays:
+   - Current Speed
+   - Distance Travelled
+   - Helmet Status
+   - Ride Status
+7. Safety rules automatically reduce or stop the vehicle when necessary.
+
+---
+
+# 🧠 Machine Learning Module
+
+The project uses a Convolutional Neural Network (CNN) based helmet detection model.
+
+### Training
+
+```
+python train_helmet_model.py
+```
+
+The trained model is stored as
+
+```
+helmet_detector.pt
+```
+
+---
+
+# 🌐 Flask API
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/` | Dashboard |
+| GET | `/data` | Get Live Data |
+| POST | `/control` | Control Speed |
+| POST | `/verify-helmet` | Helmet Verification |
+| POST | `/update` | ESP32 Feedback |
+
+---
+
+# ⚡ Safety Logic
+
+The system follows the following safety rules:
+
+- Bike will not start without helmet verification.
+- Speed is monitored continuously.
+- If safety limits are exceeded, speed is automatically reduced.
+- Distance is calculated throughout the ride.
+
+---
+
+# 🚀 Installation
+
+## Clone Repository
+
+```bash
+git clone https://github.com/rokeshkumar333/GPS-Based-Intelligent-Speed-Regulation-System.git
+```
+
+---
+
+## Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Run the Flask Application
+
+```bash
+python app.py
+```
+
+---
+
+Open your browser
+
+```
+http://127.0.0.1:5000
+```
+
+---
+
+# 📊 Dataset
+
+The helmet detection model was trained using approximately **300 helmet and non-helmet images**.
+
+The dataset is **not included** in this repository because of GitHub file size limitations.
+
+Users can train the model using their own dataset by running
+
+```bash
+python train_helmet_model.py
+```
+
+---
+
+# 🔮 Future Improvements
+
+- Google Maps API Integration
+- Live GPS Tracking
+- Traffic Prediction
+- Mobile Application
+- Cloud Database Integration
+- Emergency SOS Alert
+- Voice Assistant
+- Automatic Accident Detection
+
+---
+
+# 👨‍💻 Author
+
+**Rokesh Kumar K**
+
+B.Tech – Artificial Intelligence & Data Science
+
+SRM Valliammai Engineering College
+
+GitHub:
+https://github.com/rokeshkumar333
+
+---
+
+# ⭐ If you found this project useful, please consider giving it a star!
