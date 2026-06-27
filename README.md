@@ -10,13 +10,13 @@ This project demonstrates how Computer Vision, Embedded Systems, and Web Technol
 
 ## Dashboard
 
-![Dashboard](images/dashboard.png)
+![Dashboard](Dashboard%201.png)
 
 ---
 
 ## System Architecture
 
-![Architecture](images/architecture.png)
+![Architecture](System%20Architecture.png)
 
 ---
 
